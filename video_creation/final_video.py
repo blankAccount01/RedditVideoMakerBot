@@ -108,7 +108,7 @@ def prepare_background(reddit_id: str, W: int, H: int) -> str:
     return output_path
 
 
-def create_fancy_thumbnail(image, text, text_color, padding, wrap=35):
+def create_fancy_thumbnail(image, text, text_color, padding, wrap=50):
     print_step(f"Creating fancy thumbnail for: {text}")
     font_title_size = 47
     font = ImageFont.truetype(os.path.join("fonts", "Roboto-Bold.ttf"), font_title_size)
@@ -123,7 +123,7 @@ def create_fancy_thumbnail(image, text, text_color, padding, wrap=35):
 
     username_font = ImageFont.truetype(os.path.join("fonts", "Roboto-Bold.ttf"), 30)
     draw.text(
-        (205, 825),
+        (205, 800),
         settings.config["settings"]["channel_name"],
         font=username_font,
         fill=text_color,

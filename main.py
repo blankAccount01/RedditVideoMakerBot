@@ -24,6 +24,7 @@ from video_creation.background import (
 from video_creation.final_video import make_final_video
 from video_creation.screenshot_downloader import get_screenshots_of_reddit_posts
 from video_creation.voices import save_text_to_mp3
+from video_creation.textScreenshot import generateTextScreenshots
 
 __VERSION__ = "3.3.0"
 
@@ -49,7 +50,8 @@ def main(POST_ID=None) -> None:
     redditid = id(reddit_object)
     length, number_of_comments = save_text_to_mp3(reddit_object)
     length = math.ceil(length)
-    get_screenshots_of_reddit_posts(reddit_object, number_of_comments)
+    #get_screenshots_of_reddit_posts(reddit_object, number_of_comments)
+    generateTextScreenshots(reddit_object,number_of_comments)
     bg_config = {
         "video": get_background_config("video"),
         "audio": get_background_config("audio"),
