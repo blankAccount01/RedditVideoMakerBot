@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import glob
 import re
 import tempfile
 import textwrap
@@ -325,23 +326,51 @@ def make_final_video(
                 )
                 current_time += audio_clips_durations[i]
     else:
-        for i in range(0, number_of_clips + 1):
-            image_clips.append(
-                ffmpeg.input(f"assets/temp/{reddit_id}/png/comment_{i}.png")["v"].filter(
+        background_clip = background_clip.overlay(
+            image_clips[0],  # title image was inserted at index 0 earlier
+            enable=f"between(t,0,{audio_clips_durations[0]})",
+            x="(main_w-overlay_w)/2",
+            y="(main_h-overlay_h)/2",
+        )
+
+        # Set current_time so word overlays start after the title
+        current_time = audio_clips_durations[0]
+
+        for i in range(0, number_of_clips):  # start from 1 because 0 is the title
+            letters = f"assets/temp/{reddit_id}/png/letters_{i}.txt"
+            items = []
+            with open(letters, 'r') as file:
+                content = file.read()
+                items = content.split(',')  # Split by comma
+            items.pop()
+            print_step(f"DEBUG: Words found: {len(items)}")
+            words = len(items)
+            letterDelay = 0.04
+            letterDelayConstant = 0.15
+            wordDelay = 0.35
+
+
+            for p in range(words):
+                image_input = ffmpeg.input(f"assets/temp/{reddit_id}/png/comment_{i}_{p}.png")["v"].filter(
                     "scale", screenshot_width, -1
                 )
-            )
-            image_overlay = image_clips[i].filter("colorchannelmixer", aa=opacity)
-            assert (
-                audio_clips_durations is not None
-            ), "Please make a GitHub issue if you see this. Ping @JasonLovesDoggo on GitHub."
-            background_clip = background_clip.overlay(
-                image_overlay,
-                enable=f"between(t,{current_time},{current_time + audio_clips_durations[i]})",
-                x="(main_w-overlay_w)/2",
-                y="(main_h-overlay_h)/2",
-            )
-            current_time += audio_clips_durations[i]
+
+                split = image_input.split()
+                image_overlay = split[1].filter("colorchannelmixer", aa=opacity)
+
+                assert audio_clips_durations is not None, "Please make a GitHub issue if you see this."
+
+                duration_per_word =  int(items[p])*letterDelay+letterDelayConstant
+                background_clip = background_clip.overlay(
+                    image_overlay,
+                    enable=f"between(t,{current_time},{current_time + duration_per_word})",
+                    x="(main_w-overlay_w)/2",
+                    y="(main_h-overlay_h)/2",
+                )
+
+                current_time += duration_per_word
+            current_time+=wordDelay
+
 
     title = re.sub(r"[^\w\s-]", "", reddit_obj["thread_title"])
     idx = re.sub(r"[^\w\s-]", "", reddit_obj["thread_id"])

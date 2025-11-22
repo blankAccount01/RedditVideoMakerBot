@@ -33,38 +33,54 @@ def generateTextScreenshots(reddit_object: dict, screenshot_num: int):
     output_dir = f"assets/temp/{reddit_object['thread_id']}/png"
     os.makedirs(output_dir, exist_ok=True)
 
-    font_path = "./fonts/Roboto-Regular.ttf"  # Update this path if needed
+    font_path = "./fonts/Roboto-Regular.ttf"
     font_size = 40
-    image_width = 1052
-    image_height = 300
+    image_width = 400  # Smaller since it's just one word
+    image_height = 100
     padding_top = 20
     padding_left = 20
-    line_spacing = 6
     text_color = (255, 255, 255)
     stroke_color = (0, 0, 0)
+
     font = ImageFont.truetype(font_path, font_size)
+    punctuation_marks = {'.', ',', ';', ':', '?', '!'}
+    symbols = {'!',"@","#","$","%","^","&","*","&","(",")",0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
     for idx, comment in enumerate(comments[:screenshot_num]):
         print_substep(f"Rendering comment {idx} → ID: {comment['comment_id']}")
-        img = Image.new("RGBA", (image_width, image_height), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
+        words = comment["comment_body"].split()
+        letters = os.path.join(output_dir, f"letters_{idx}.txt")
+        with open(letters, 'w') as file:
+                file.write('')
+        
+        image_counter = 0
 
-        lines = wrap_text(comment["comment_body"], draw, font, image_width - 2 * padding_left)
+        for word in words:
+            img = Image.new("RGBA", (image_width, image_height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
 
-        y = padding_top
-        for line in lines:
+            bbox = draw.textbbox((0, 0), word, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            x = (image_width - text_width) // 2
+            y = (image_height - text_height) // 2
+
             draw.text(
-                (padding_left, y),
-                line,
+                (x, y),
+                word,
                 font=font,
                 fill=text_color,
                 stroke_width=4,
                 stroke_fill=stroke_color
             )
-            bbox = draw.textbbox((padding_left, y), line, font=font)
-            line_height = bbox[3] - bbox[1] + line_spacing  # add spacing after line
-            y += line_height
+            
+            with open(letters, 'a') as file:
+                if any(char in punctuation_marks for char in word):
+                    file.write(f'{len(word)+12},') #increases delay if punctuation is detected
+                elif any(char in symbols for char in word):
+                    file.write(f'{len(word)+8},')
+                else:
+                    file.write(f'{len(word)},')
 
-
-        # Save the image
-        img_path = os.path.join(output_dir, f"comment_{idx}z.png")
-        img.save(img_path)
+            img_path = os.path.join(output_dir, f"comment_{idx}_{image_counter}.png")
+            img.save(img_path)
+            image_counter += 1
